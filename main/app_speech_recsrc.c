@@ -14,10 +14,6 @@
 #include "esp_log.h"
 #include "esp_spiffs.h"
 #include "app_main.h"
-#include "freertos/event_groups.h"
-#include "board_def.h"
-
-extern EventGroupHandle_t evGroup;
 
 static void i2s_init(void)
 {
@@ -32,10 +28,10 @@ static void i2s_init(void)
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2,
     };
     i2s_pin_config_t pin_config = {
-        .bck_io_num = IIS_SCLK,
-        .ws_io_num = IIS_LCLK,
-        .data_out_num = IIS_DSIN,
-        .data_in_num = IIS_DOUT,
+        .bck_io_num = 14,  // IIS_SCLK
+        .ws_io_num = 32,   // IIS_LCLK
+        .data_out_num = -1,// IIS_DSIN
+        .data_in_num = 33  // IIS_DOUT
     };
     i2s_driver_install(1, &i2s_config, 0, NULL);
     i2s_set_pin(1, &pin_config);
@@ -46,24 +42,22 @@ void recsrcTask(void *arg)
 {
     i2s_init();
 
-    src_cfg_t *cfg = (src_cfg_t *)arg;
-    size_t samp_len = cfg->item_size * 2 * sizeof(int) / sizeof(int16_t);
+    src_cfg_t *cfg=(src_cfg_t*)arg;
+    size_t samp_len = cfg->item_size*2*sizeof(int)/sizeof(int16_t);
 
-    int *samp = malloc(samp_len);
+    int *samp=malloc(samp_len);
 
     size_t read_len = 0;
 
-    while (1) {
-
-        xEventGroupWaitBits(evGroup, 1, pdFALSE, pdFALSE, portMAX_DELAY);
-
-        if (g_state != WAIT_FOR_WAKEUP) {
+    while(1) {
+        if (g_state != WAIT_FOR_WAKEUP)
+        {
             vTaskDelay(1000 / portTICK_PERIOD_MS);
             continue;
         }
 
         i2s_read(1, samp, samp_len, &read_len, portMAX_DELAY);
-        for (int x = 0; x < cfg->item_size / 4; x++) {
+        for (int x=0; x<cfg->item_size/4; x++) {
             int s1 = ((samp[x * 4] + samp[x * 4 + 1]) >> 13) & 0x0000FFFF;
             int s2 = ((samp[x * 4 + 2] + samp[x * 4 + 3]) << 3) & 0xFFFF0000;
             samp[x] = s1 | s2;
@@ -71,6 +65,8 @@ void recsrcTask(void *arg)
 
         xQueueSend(*cfg->queue, samp, portMAX_DELAY);
     }
+
     vTaskDelete(NULL);
 }
+
 
