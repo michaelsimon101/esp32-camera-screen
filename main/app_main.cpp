@@ -30,7 +30,7 @@ face recognition will be displayed in the display,
 and the microphone will be disabled. The web page will not be viewable.
 Only face input and camera parameters can be adjusted.
 */
-// #define FACE_DETECT_IN_SCREEN
+#define FACE_DETECT_IN_SCREEN
 
 // #define ENABLE_BME280   //! Turning on the macro will launch the GUI and BME280 sensor
 
@@ -654,11 +654,11 @@ extern "C"  void app_main()
     }
 
 #ifndef FACE_DETECT_IN_SCREEN
-    app_speech_wakeup_init();
+    // app_speech_wakeup_init();
 #endif
 
 #ifndef ENABLE_BME280
-    app_speech_wakeup_init();
+    // app_speech_wakeup_init();
 #endif
 
     g_state = WAIT_FOR_WAKEUP;
@@ -666,11 +666,13 @@ extern "C"  void app_main()
 #ifdef ENABLE_BME280
     app_sensor_init(&dev);
 #else
+/*******
     lv_label_set_text(label, "Please say nihaotianmao!");
     lv_obj_align(label, NULL, LV_ALIGN_CENTER, 0, 0);
     while (g_state == WAIT_FOR_WAKEUP) {
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
+ *****/
 #endif
 
     lv_obj_del(label);
